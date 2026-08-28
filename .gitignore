@@ -1,0 +1,22 @@
+# Xcode
+DerivedData/
+.build/
+build/
+*.xcuserstate
+*.xcresult
+
+# Xcode/SwiftPM per-user state.
+# Note: we do NOT ignore `*.xcworkspace` wholesale — the project's own
+# `InvestFlow.xcodeproj/project.xcworkspace/contents.xcworkspacedata` is a
+# tracked project file. Only per-user data inside any workspace is ignored.
+**/xcuserdata/
+.swiftpm/
+
+# Editor / tooling local config
+.claude/
+
+# macOS
+.DS_Store
+
+# Secrets
+.env

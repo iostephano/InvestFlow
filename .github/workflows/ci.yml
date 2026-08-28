@@ -1,0 +1,98 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# InvestFlow — Continuous Integration
+#
+# Triggers : push to main, any pull_request targeting main.
+# Runner   : macos-26  →  ships with Xcode 26.x + iOS 26 SDK.
+#            (iOS 26.0 minimum deployment target requires Xcode 26.)
+# Scheme   : InvestFlow  (shared, includes InvestFlowTests)
+# Packages : FinCore + FinUI are local SPM packages — no network fetch needed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel any in-progress run for the same ref, keeping CI queue lean.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build & Test — iOS Simulator
+    runs-on: macos-26   # Xcode 26 is preinstalled on this runner
+
+    env:
+      PROJECT:       InvestFlow.xcodeproj
+      SCHEME:        InvestFlow
+      CONFIGURATION: Debug
+      # iOS Simulator destination.
+      # OS=latest resolves to the highest iOS version available on the runner.
+      # Adjust `name` if the runner ships a different device family (e.g. iPhone 17).
+      DESTINATION:   "platform=iOS Simulator,OS=latest,name=iPhone 16"
+
+    steps:
+      # ── 1. Source ───────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Xcode ────────────────────────────────────────────────────────────
+      - name: Select Xcode
+        run: |
+          # Pick the newest Xcode in /Applications (handles side-by-side installs).
+          XCODE_PATH=$(find /Applications -maxdepth 1 -name "Xcode*.app" -type d \
+                       | sort -rV | head -1)
+          if [[ -z "$XCODE_PATH" ]]; then
+            echo "Error: No Xcode installation found in /Applications" && exit 1
+          fi
+          sudo xcode-select -s "$XCODE_PATH"
+          echo "Active Xcode: $(xcodebuild -version | tr '\n' ' ')  →  $XCODE_PATH"
+
+      # ── 3. Diagnostics (helps debug destination mismatches in CI logs) ──────
+      - name: List available simulators
+        run: |
+          xcrun simctl list devices available 2>/dev/null \
+            | grep -E "^--|iPhone|iPad" \
+            || echo "simctl returned no output"
+
+      # ── 4. Build ────────────────────────────────────────────────────────────
+      # Uses generic/platform to compile without booting a simulator.
+      # Catches Swift 6 strict-concurrency errors and linker issues fast.
+      - name: Build
+        run: |
+          xcodebuild build \
+            -project "$PROJECT" \
+            -scheme  "$SCHEME"  \
+            -configuration "$CONFIGURATION" \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            -quiet
+
+      # ── 5. Test ─────────────────────────────────────────────────────────────
+      # Runs all Swift Testing suites in InvestFlowTests.
+      # -resultBundlePath writes an .xcresult for the artifact step.
+      - name: Test
+        run: |
+          xcodebuild test \
+            -project "$PROJECT" \
+            -scheme  "$SCHEME"  \
+            -configuration "$CONFIGURATION" \
+            -destination "$DESTINATION" \
+            CODE_SIGNING_ALLOWED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            -resultBundlePath TestResults.xcresult
+
+      # ── 6. Artifacts ────────────────────────────────────────────────────────
+      # Upload the .xcresult on every run so failures are inspectable.
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-${{ github.run_number }}
+          path: TestResults.xcresult
+          retention-days: 14
