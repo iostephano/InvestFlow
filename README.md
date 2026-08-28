@@ -1,3 +1,4 @@
+<img width="1999" height="856" alt="Cover" src="https://github.com/user-attachments/assets/7351f9c0-5cc2-4359-a59e-c7485cc2c6b6" />
 # 📈 InvestFlow — Demo de arquitectura iOS FinTech
 
 InvestFlow es una aplicación demo de iOS que simula la compra y venta de acciones, ETFs y criptomonedas. Fue creada como proyecto de portafolio para mostrar cómo construyo una app de inversión de principio a fin: desde la lógica de negocio hasta la interfaz, pasando por buenas prácticas de organización de código y pruebas automatizadas.
