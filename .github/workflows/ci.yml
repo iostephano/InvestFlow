@@ -30,10 +30,8 @@ jobs:
       PROJECT:       InvestFlow.xcodeproj
       SCHEME:        InvestFlow
       CONFIGURATION: Debug
-      # iOS Simulator destination.
-      # OS=latest resolves to the highest iOS version available on the runner.
-      # Adjust `name` if the runner ships a different device family (e.g. iPhone 17).
-      DESTINATION:   "platform=iOS Simulator,OS=latest,name=iPhone 16"
+      # The Test step resolves a concrete simulator UDID at runtime (see below),
+      # so there is no hard-coded device name to drift out of sync with the image.
 
     steps:
       # ── 1. Source ───────────────────────────────────────────────────────────
@@ -43,11 +41,15 @@ jobs:
       # ── 2. Xcode ────────────────────────────────────────────────────────────
       - name: Select Xcode
         run: |
-          # Pick the newest Xcode in /Applications (handles side-by-side installs).
-          XCODE_PATH=$(find /Applications -maxdepth 1 -name "Xcode*.app" -type d \
-                       | sort -rV | head -1)
-          if [[ -z "$XCODE_PATH" ]]; then
-            echo "Error: No Xcode installation found in /Applications" && exit 1
+          # Use the exact Xcode version declared in .xcode-version so CI matches
+          # what the project is developed and released against.
+          VERSION=$(tr -d '[:space:]' < .xcode-version)
+          XCODE_PATH="/Applications/Xcode_${VERSION}.app"
+          if [[ ! -d "$XCODE_PATH" ]]; then
+            echo "Error: Xcode ${VERSION} not found at ${XCODE_PATH}" >&2
+            echo "Installed Xcodes:" >&2
+            ls -d /Applications/Xcode*.app >&2
+            exit 1
           fi
           sudo xcode-select -s "$XCODE_PATH"
           echo "Active Xcode: $(xcodebuild -version | tr '\n' ' ')  →  $XCODE_PATH"
@@ -78,11 +80,32 @@ jobs:
       # -resultBundlePath writes an .xcresult for the artifact step.
       - name: Test
         run: |
+          # Resolve the UDID of the newest available iPhone simulator on the
+          # runner, so the destination never drifts out of sync with the image.
+          SIM_ID=$(xcrun simctl list devices available --json | jq -r '
+            [ .devices
+              | to_entries[]
+              | select(.key | test("SimRuntime\\.iOS"))
+              | .key as $runtime
+              | .value[]
+              | select(.name | startswith("iPhone"))
+              | { runtime: $runtime, name: .name, udid: .udid }
+            ]
+            | sort_by(.runtime, .name)
+            | last
+            | .udid
+          ')
+          if [[ -z "$SIM_ID" || "$SIM_ID" == "null" ]]; then
+            echo "Error: no iPhone simulator found on the runner" >&2
+            xcrun simctl list devices available >&2
+            exit 1
+          fi
+          echo "Using simulator UDID: $SIM_ID"
           xcodebuild test \
             -project "$PROJECT" \
-            -scheme  "$SCHEME"  \
+            -scheme  "$SCHEME" \
             -configuration "$CONFIGURATION" \
-            -destination "$DESTINATION" \
+            -destination "id=$SIM_ID" \
             CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             -resultBundlePath TestResults.xcresult
