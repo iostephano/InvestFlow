@@ -110,7 +110,53 @@ jobs:
             COMPILER_INDEX_STORE_ENABLE=NO \
             -resultBundlePath TestResults.xcresult
 
-      # ── 6. Artifacts ────────────────────────────────────────────────────────
+      # ── 6. Verify tests actually ran ───────────────────────────────────────
+      # Swift Testing suites are NOT reflected in xcodebuild's legacy console
+      # summary ("Executed 0 tests"), so a scheme that silently stops running
+      # its tests would still show ** TEST SUCCEEDED **. Parse the .xcresult
+      # with `xcresulttool get test-results summary` (Xcode 16+ subcommand,
+      # schema 0.1.0 — covers XCTest and Swift Testing) and gate on it.
+      - name: Verify tests executed
+        if: always()
+        run: |
+          if [[ ! -d TestResults.xcresult ]]; then
+            echo "::error::TestResults.xcresult no encontrado — el paso Test no generó un result bundle"
+            exit 1
+          fi
+
+          SUMMARY=$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact)
+          jq . <<< "$SUMMARY"
+
+          RESULT=$( jq -r '.result          // "unknown"' <<< "$SUMMARY")
+          TOTAL=$(  jq -r '.totalTestCount   // 0'         <<< "$SUMMARY")
+          PASSED=$( jq -r '.passedTests      // 0'         <<< "$SUMMARY")
+          FAILED=$( jq -r '.failedTests      // 0'         <<< "$SUMMARY")
+          SKIPPED=$(jq -r '.skippedTests     // 0'         <<< "$SUMMARY")
+          XFAIL=$(  jq -r '.expectedFailures // 0'         <<< "$SUMMARY")
+          EXECUTED=$(( PASSED + FAILED + XFAIL ))
+
+          echo "──────────────────────────────────────────────"
+          echo "  Resultado global : $RESULT"
+          echo "  Tests ejecutados : $EXECUTED  (de $TOTAL en el plan)"
+          echo "  · pasaron        : $PASSED"
+          echo "  · fallaron       : $FAILED"
+          echo "  · fallos esperad.: $XFAIL"
+          echo "  · saltados       : $SKIPPED"
+          echo "──────────────────────────────────────────────"
+
+          if [[ "$EXECUTED" -eq 0 ]]; then
+            echo "::error::No se ejecutó ningún test (0 tests ejecutados). Revisa el scheme/target InvestFlowTests."
+            exit 1
+          fi
+          if [[ "$FAILED" -ne 0 || "$RESULT" == "Failed" ]]; then
+            echo "::error::$FAILED test(s) fallaron:"
+            jq -r '.testFailures[]? | "  ✘ \(.targetName)/\(.testName): \(.failureText)"' <<< "$SUMMARY"
+            exit 1
+          fi
+
+          echo "✅ $EXECUTED tests ejecutados, $FAILED fallos"
+
+      # ── 7. Artifacts ────────────────────────────────────────────────────────
       # Upload the .xcresult on every run so failures are inspectable.
       - name: Upload test results
         if: always()
