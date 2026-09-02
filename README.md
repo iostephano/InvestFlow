@@ -5,11 +5,11 @@ InvestFlow es una aplicación demo de iOS que simula la compra y venta de accion
 
 ---
 
-## 🚀 Tecnologías usadas
+## Tecnologías usadas
 
 - Swift (última versión, con verificación estricta de concurrencia)
 - SwiftUI
-- `@Observable` — el mecanismo moderno de Apple para que la interfaz se actualice sola cuando cambian los datos
+- `@Observable` el mecanismo moderno de Apple para que la interfaz se actualice sola cuando cambian los datos
 - Programación asíncrona (`async`/`await`) para manejar operaciones que toman tiempo (como pedir datos de mercado) sin congelar la app
 - Arquitectura por capas (Clean Architecture)
 - Patrón MVVM + un Coordinator que centraliza la navegación
@@ -17,11 +17,11 @@ InvestFlow es una aplicación demo de iOS que simula la compra y venta de accion
 - Sistema propio para inyectar dependencias, sin librerías externas de terceros
 - Swift Testing para las pruebas automatizadas
 - Integración continua con GitHub Actions: cada cambio se compila y se prueba automáticamente
-- Cero dependencias externas — todo el código corre sobre frameworks propios de Apple
+- Cero dependencias externas todo el código corre sobre frameworks propios de Apple
 
 ---
 
-## 🧱 Cómo está organizado el proyecto
+## Cómo está organizado el proyecto
 
 El proyecto separa responsabilidades en capas claras:
 
@@ -29,15 +29,15 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ### Ideas clave:
 
-- **El Dominio (`FinCore`) es independiente de todo lo demás** — no depende de la interfaz ni de la red, así que se puede probar y reutilizar sin cambios.
+- **El Dominio (`FinCore`) es independiente de todo lo demás** no depende de la interfaz ni de la red, así que se puede probar y reutilizar sin cambios.
 - **La lógica de negocio vive en "casos de uso"** (por ejemplo, "colocar una orden" o "calcular ganancias/pérdidas"), separada de la interfaz.
-- **Los repositorios abstraen de dónde vienen los datos** — la app no necesita saber si la información viene de un servidor real o de datos simulados.
-- **La interfaz nunca habla directamente con la capa de datos** — siempre pasa por los casos de uso.
+- **Los repositorios abstraen de dónde vienen los datos** la app no necesita saber si la información viene de un servidor real o de datos simulados.
+- **La interfaz nunca habla directamente con la capa de datos** siempre pasa por los casos de uso.
 - Cada repositorio tiene dos versiones: una **simulada** (para la demo, sin necesidad de un servidor real) y una **real** (lista para conectarse a un backend cuando exista).
 
 ---
 
-## 🔁 Cómo fluye una acción típica
+## Cómo fluye una acción típica
 
 1. El usuario interactúa con una pantalla.
 2. La pantalla le pide a su ViewModel que haga algo.
@@ -47,7 +47,7 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
-## 🧠 Lógica de negocio (`FinCore`)
+## Lógica de negocio (`FinCore`)
 
 - Completamente independiente y fácil de probar, sin dependencias externas.
 - Usa el tipo `Decimal` para todos los cálculos de dinero (más preciso que usar números decimales comunes, evitando errores de redondeo).
@@ -61,26 +61,26 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
-## 🗄 Capa de Datos
+## Capa de Datos
 
 - Cada repositorio tiene una versión simulada (datos de ejemplo, útil para la demo) y una versión real (lista para conectarse a un servidor).
 - Los datos que llegan de fuera se traducen a los tipos internos de la app mediante "mappers" dedicados, para mantener todo prolijo y desacoplado.
 - El portafolio y la lista de seguimiento usan un sistema de caché con expiración, para no repetir peticiones innecesarias.
-- Las noticias de mercado y el historial de precios se generan de forma simulada para la demo — no hay un proveedor de datos de mercado real conectado.
+- Las noticias de mercado y el historial de precios se generan de forma simulada para la demo no hay un proveedor de datos de mercado real conectado.
 - Los repositorios simulados de órdenes y portafolio comparten un mismo almacén en memoria (`MockBrokerStore`): al comprar o vender algo, el saldo y las posiciones se actualizan de verdad dentro de esa sesión de uso, aunque no haya un servidor real detrás.
 
 ---
 
-## ⚙️ Capa Core (infraestructura)
+## Capa Core (infraestructura)
 
 - Cliente de red propio, con reintento automático cuando expira la sesión.
 - Manejo seguro de tokens de sesión mediante el Keychain de iOS (el almacén cifrado del sistema).
 - Sistema de caché con expiración automática.
-- Un logger propio con puntos de extensión ya preparados para conectar en el futuro un servicio de reportes de errores o analítica — hoy no están conectados a ningún servicio externo.
+- Un logger propio con puntos de extensión ya preparados para conectar en el futuro un servicio de reportes de errores o analítica, hoy no están conectados a ningún servicio externo.
 
 ---
 
-## 🎨 Interfaz
+## Interfaz
 
 - SwiftUI + MVVM.
 - Un Coordinator centraliza la navegación de toda la app.
@@ -88,7 +88,7 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
-## ⚡ Manejo de tareas en paralelo
+## Manejo de tareas en paralelo
 
 - El proyecto usa el modelo de concurrencia más reciente de Swift, que evita errores comunes de acceso simultáneo a datos compartidos.
 - Se usan actores para proteger el estado compartido (por ejemplo, la caché o el token de sesión).
@@ -96,7 +96,7 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
-## 📱 Funcionalidades
+## Funcionalidades
 
 - Inicio de sesión, restauración de sesión y cierre de sesión, con opción de desbloqueo biométrico (Face ID / Touch ID).
 - Pantalla de inicio: saldo disponible, accesos rápidos, promociones, resumen de la lista de seguimiento.
@@ -111,18 +111,18 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
-## 🧪 Pruebas automatizadas
+## Pruebas automatizadas
 
 - El proyecto tiene una suite de pruebas automatizadas que cubre la lógica de negocio, las pantallas y la infraestructura, para detectar errores antes de que lleguen a producción.
 - Cada cambio subido al repositorio se compila y se prueba automáticamente antes de aceptarse.
 
 ---
 
-## ⚠️ Cosas que quedan pendientes o limitadas (a propósito)
+## Cosas que quedan pendientes o limitadas (a propósito)
 
-- No hay un servidor real conectado — la demo funciona completamente con datos simulados. La versión "real" de cada repositorio ya está escrita y lista para conectarse el día que exista un backend.
-- El envío de una orden no incluye todavía una protección contra duplicados en caso de que la conexión falle a mitad de camino — es un detalle pendiente de resolver junto con un backend real.
-- El estado del portafolio simulado vive solo mientras la app está abierta — al reiniciarla, vuelve a los valores iniciales, ya que no hay almacenamiento permanente ni servidor detrás. Las órdenes con precio límite o stop-loss quedan registradas como pendientes, pero nada las ejecuta automáticamente en esta demo.
+- No hay un servidor real conectado, la demo funciona completamente con datos simulados. La versión "real" de cada repositorio ya está escrita y lista para conectarse el día que exista un backend.
+- El envío de una orden no incluye todavía una protección contra duplicados en caso de que la conexión falle a mitad de camino, es un detalle pendiente de resolver junto con un backend real.
+- El estado del portafolio simulado vive solo mientras la app está abierta, al reiniciarla, vuelve a los valores iniciales, ya que no hay almacenamiento permanente ni servidor detrás. Las órdenes con precio límite o stop-loss quedan registradas como pendientes, pero nada las ejecuta automáticamente en esta demo.
 - El flujo de transferencia de fondos está preparado en el diseño, pero su conexión a un servidor real todavía no está implementada.
 - Las noticias y el historial de precios son datos de ejemplo, no información de mercado real.
 - No hay todavía un servicio de reportes de errores ni de analítica conectado.
@@ -131,7 +131,7 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
-## 🎯 Qué busca demostrar este proyecto
+## Qué busca demostrar este proyecto
 
 - Una arquitectura organizada y fácil de mantener, con la lógica de negocio separada de todo lo demás.
 - Buen manejo de la concurrencia moderna de Swift.
@@ -140,6 +140,17 @@ App → Presentación → Dominio (FinCore) → Datos → Core, con FinUI como s
 
 ---
 
+## Proceso de desarrollo
+
+Este proyecto fue desarrollado utilizando Claude Code como acelerador de desarrollo, bajo mi dirección técnica: definí la arquitectura, tomé cada decisión de diseño, revisé el código resultante línea por línea, y probé la aplicación manualmente como lo haría un usuario real para encontrar y corregir errores que un asistente de código no detecta por sí solo. Dos ejemplos concretos:
+
+Las operaciones de compra/venta no actualizaban el portafolio. Al probar la app, noté que comprar un activo no modificaba ni el saldo disponible ni las posiciones. Investigué la causa (los repositorios simulados de órdenes y portafolio funcionaban de forma completamente aislada entre sí) y diseñé la solución: un almacén compartido (MockBrokerStore) que ambos repositorios consultan, replicando cómo se comportaría un backend real.
+El botón "Cerrar sesión" del menú lateral no cerraba la sesión. Aunque la misma acción sí funcionaba desde la pantalla de perfil, descubrí que el botón del menú solo reseteaba la navegación sin invalidar la sesión real. Corregí ambos flujos para que compartan la misma lógica.
+
+Contar con esta forma de trabajar es también, en sí misma, una habilidad que sigo desarrollando de forma deliberada: dirigir herramientas de IA con criterio técnico propio para producir software de calidad profesional.
+
+---
+
 ## Autor
 
-Stephano Portella
+Stephano Portella - 2026
